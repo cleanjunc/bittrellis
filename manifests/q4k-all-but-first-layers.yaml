@@ -1,0 +1,24 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: q4k-all-but-first-layers
+description: >
+  V1 (everything Q4_K) with the first layer of each kind left NVFP4: GDN layer 0, MLP layer 0 and
+  attention layer 3. V1 keeps quality within noise, passes the holdout and saves 1.8 GiB, but loses 49%
+  prefill; the first layer of each kind selects the batched-prefill path (V6 vs mlp-q4k-skip-layer0,
+  V4 vs gdn-q4k-deep), so this should keep nearly all of V1's memory saving at much faster prefill.
+  MLP Q4_K stays on the full depth: an early-only MLP map concentrates the gain in math, which did not
+  carry over to the holdout (#6).
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.*"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.mlp"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.attn.*"
+    layers: "7-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
