@@ -1,0 +1,20 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: gdn-state-fp8-skip0
+description: >
+  FP8 on the recurrent state projections qkv and z (all layers but layer 0), everything else NVFP4.
+  Attacks fidelity, not memory: the valid frontier tops out at 0.124 RP-KL, and only FP8 on the
+  recurrent path reaches below it. MLP and attention stay NVFP4 so prefill keeps V0's path and the
+  32K needles are not disturbed; layer 0 stays NVFP4 to protect the batched-prefill path. qkv and z
+  are the state-writing and gating projections that drive long-context fidelity (a structural gain
+  that should transfer to held-out text, where the calibrated-byte gains did not); out is left NVFP4
+  to hold decode cost down. A pure format change, the kind the feasibility report found transfers.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.qkv"
+    layers: "1-63"
+    format: FP8
+  - match: "L*.gdn.z"
+    layers: "1-63"
+    format: FP8
