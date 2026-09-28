@@ -1,0 +1,23 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: nvfp4-blockfit-all-lmhead-q4k
+description: >
+  Same formats and kernels as V0, better bytes. Every NVFP4 projection is re-encoded by nvfp4_blockfit,
+  which picks each 16-value block scale by reconstruction error instead of round-to-nearest (|e|^1.5 on
+  MLP, e^2 on attention and GDN), and lm_head is stored BF16 so its batch-1 Q4_K is fitted once from the
+  original weights instead of twice through NVFP4. Speed and memory stay V0's; drift should fall in every
+  section, because the gain is a better weight fit, not a fit to any text.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.mlp"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.attn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+modules:
+  lm_head: Q4_K
