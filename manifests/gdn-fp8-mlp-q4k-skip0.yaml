@@ -1,0 +1,21 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: gdn-fp8-mlp-q4k-skip0
+description: >
+  FP8 on every recurrent (GDN) projection, as in V3, with the MLP blocks after layer 0 as Q4_K and lm_head
+  stored BF16 so its batch-1 Q4_K is fitted once from the original weights. Each part has passed the private
+  holdout on its own (V3; the MLP Q4_K maps mlp-q4k-skip-layer0 and gdn-mlp-q4k-skip-layer0), and they fix
+  different errors: FP8 keeps the recurrent state, and with it retrieval and long context, close to BF16,
+  while the Q4_K fit of the MLP has lower output error than the shipped round-to-nearest NVFP4 bytes. MLP
+  layer 0 stays NVFP4, so the batched-prefill path stays on. The Q4_K MLP also returns about 1.1 GiB of the
+  memory FP8 costs, so peak memory sits below V3 and #11.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.*"
+    format: FP8
+  - match: "L*.mlp"
+    layers: "1-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
