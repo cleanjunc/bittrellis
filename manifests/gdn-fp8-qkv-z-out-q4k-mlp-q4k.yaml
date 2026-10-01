@@ -1,0 +1,28 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: gdn-fp8-qkv-z-out-q4k-mlp-q4k
+description: >
+  The FP8 recurrent recipe with MLP Q4_K after layer 0 (gdn-fp8-mlp-q4k-skip0, gdn-fp8-mlp-q4k-zo-deep-q4k),
+  with every recurrent out projection after layer 0 moved to Q4_K. FP8 stays where it protects the recurrent
+  state: qkv at every depth and z in layers 0-31, as in the shallow-z finding of gdn-fp8-qkv-all-zo-split;
+  z in layers 32-63 is Q4_K as in gdn-fp8-mlp-q4k-zo-deep-q4k. The shallow out projections were the
+  remaining FP8 units whose 8 bits buy little fidelity, so turning them to Q4_K cuts decode traffic and peak
+  memory below every FP8 recipe on the frontier, at a small drift cost. Layer 0 and attention stay as they
+  are, so the batched-prefill paths stay on. lm_head is stored BF16, so its batch-1 Q4_K is fitted once from
+  the original weights.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.*"
+    format: FP8
+  - match: "L*.gdn.z"
+    layers: "32-63"
+    format: Q4_K
+  - match: "L*.gdn.out"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.mlp"
+    layers: "1-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
