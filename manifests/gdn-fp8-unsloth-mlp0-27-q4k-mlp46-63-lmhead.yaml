@@ -1,0 +1,24 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: gdn-fp8-unsloth-mlp0-27-q4k-mlp46-63-lmhead
+description: >
+  FP8 on every recurrent projection, with the MLP split by what each part fixes: the attested calibrated NVFP4
+  bytes (unsloth) on MLP layers 0-27, where they cut maths drift without touching prefill, and Q4_K fitted from
+  BF16 on MLP layers 46-63 only, which lowers code, general and tools drift while costing far less prefill than
+  Q4_K on the whole MLP. MLP layers 28-45 keep the shipped bytes: Q4_K there cancels the maths gain. Attention
+  keeps the shipped bytes (a mixed-format attention stack loses long context); lm_head is stored BF16 so its
+  batch-1 Q4_K is fitted once from the original weights.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.*"
+    format: FP8
+  - match: "L*.mlp"
+    layers: "0-27"
+    format: NVFP4
+    quantizer: unsloth
+  - match: "L*.mlp"
+    layers: "46-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
