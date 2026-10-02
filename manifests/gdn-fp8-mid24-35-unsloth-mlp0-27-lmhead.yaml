@@ -1,0 +1,23 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: gdn-fp8-mid24-35-unsloth-mlp0-27-lmhead
+description: >
+  FP8 on the recurrent band 24-35 of the shipped map (as in gdn-fp8-mid24-35-lmhead-q4k), with the attested
+  calibrated NVFP4 bytes (unsloth) on MLP layers 0-27 only. Across all of layers 0-55 those bytes help maths but
+  cost code, long context and multilingual drift, which is why V13 earns nothing; measured by section, the
+  early half keeps most of the maths gain while long, code, general and multilingual drift all stay below the
+  band alone. They are NVFP4 like the shipped bytes, so kernels, prefill, decode and memory stay those of the
+  band recipe. Attention, the other recurrent layers and MLP layers 28-63 keep the shipped bytes; lm_head is
+  stored BF16 so its batch-1 Q4_K is fitted once from the original weights.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.gdn.*"
+    layers: "24-35"
+    format: FP8
+  - match: "L*.mlp"
+    layers: "0-27"
+    format: NVFP4
+    quantizer: unsloth
+modules:
+  lm_head: Q4_K
