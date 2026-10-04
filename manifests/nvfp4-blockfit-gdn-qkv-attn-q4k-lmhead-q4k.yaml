@@ -1,0 +1,31 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: nvfp4-blockfit-gdn-qkv-attn-q4k-lmhead-q4k
+description: >
+  Q4_K on the recurrent qkv projection of layers 1-63 and on every attention projection, with nvfp4_blockfit
+  bytes on the recurrent z and out projections and on every MLP, and lm_head fitted once as Q4_K. Measured by
+  section against blockfit alone, Q4_K on qkv halves long-context drift (0.75 to 0.37 of V0's) and cuts maths
+  from 0.41 to 0.23, while multilingual rises; Q4_K on attention brings multilingual back to 0.70 and lowers
+  code. Both are fitted from BF16 at load, so decode stays near V0 and peak memory drops below it; the cost is
+  4K prefill. Layer 0 keeps its NVFP4 bytes, which select the batched-prefill path. z and out keep blockfit (Q4_K on
+  all three recurrent projections measured worse than blockfit in gdn-q4k-skip0-nvfp4-blockfit-rest-lmhead-q4k),
+  and so do the MLPs, where blockfit's drift is lower than Q4_K's.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.mlp"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.attn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.qkv"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.attn.*"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
