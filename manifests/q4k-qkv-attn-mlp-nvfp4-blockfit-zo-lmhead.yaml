@@ -1,0 +1,32 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: q4k-qkv-attn-mlp-nvfp4-blockfit-zo-lmhead
+description: >
+  A low-memory map: Q4_K on the recurrent qkv projection of layers 1-63, on every attention projection and on MLP
+  layers 1-63, with nvfp4_blockfit bytes on the recurrent z and out projections and on layer 0, and lm_head fitted
+  once as Q4_K. Q4_K stores 4.5 bits per weight where NVFP4 keeps 5.0 resident, so peak memory falls about 1.4 GiB
+  below V0 while decode stays near it. Unlike the earlier Q4_K maps this low in memory, z and out keep blockfit
+  bytes and attention moves to Q4_K; measured by section, long-context drift is 0.34 of V0's and multilingual
+  0.72. Layer 0 keeps NVFP4 bytes, which select the batched-prefill path; the cost of the map is 4K prefill.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.mlp"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.attn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.qkv"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.mlp"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.attn.*"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
