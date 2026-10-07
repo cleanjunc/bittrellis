@@ -1,0 +1,45 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: nvfp4-gptq-mlp-gdn-fp8-mid24-35-lmhead-q4k-attention-runtime-q4-k-3-7-11-15-19-23-27-31-35-39-43-47-51-55-59-6
+description: '#105 with runtime Q4_K on the attention of layers 3,7,11,15,19,23,27,31,35,39,43,47,51,55,59,63 and
+  FP8 on the recurrent qkv of layers 1-2,4-6,8-10,12-14,16-18,20-22,36-38,40-42,44-46,48-50,52-54,56-58,60-62; every
+  other unit keeps #105''s assignment. The substitution was measured by the evaluator on other maps (see the PR
+  description).'
+authors:
+- cleanjunc
+default: NVFP4
+rules:
+- match: L*.mlp
+  format: NVFP4
+  quantizer: nvfp4_gptq
+- match: L*.attn.q
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.attn.k
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.attn.v
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.attn.o
+  format: Q4_K
+- match: L*.gdn.qkv
+  format: FP8
+- match: L*.gdn.qkv
+  layers: '0'
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.gdn.z
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.gdn.z
+  layers: 24-26,28-30,32-34
+  format: FP8
+- match: L*.gdn.out
+  format: NVFP4
+  quantizer: nvfp4_blockfit
+- match: L*.gdn.out
+  layers: 24-26,28-30,32-34
+  format: FP8
+modules:
+  lm_head: Q4_K
