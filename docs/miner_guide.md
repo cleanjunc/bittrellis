@@ -66,7 +66,9 @@ Open encoder work (epoch hpc01-e6):
 
 - **Calibrated MLP encoders.** `bittrellis calibration fetch` downloads the pinned statistics (6.7 GB);
   `input_hessian(ctx, lin)` gives each layer's MLP gate/up input statistics for GPTQ-style rounding
-  ([contract](quantizer_contract.md#calibration-statistics-epoch-hpc01-e6)).
+  ([contract](quantizer_contract.md#calibration-statistics-epoch-hpc01-e6)). `nvfp4_gptq_mlp` also rounds
+  `down_proj` by GPTQ, on input statistics it derives from the pinned gate/up statistics and the unit's own
+  gate/up weights.
 - **FP8 bytes.** Every FP8 tensor today is round-to-nearest (`rtn`); smarter per-row scales need no calibration.
 - **Sequential encoders.** The audit replays `replay_mode: sequential` (error carried from earlier layers);
   no encoder uses it yet.

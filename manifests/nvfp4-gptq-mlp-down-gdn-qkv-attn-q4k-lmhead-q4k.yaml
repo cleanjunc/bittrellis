@@ -1,0 +1,27 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: nvfp4-gptq-mlp-down-gdn-qkv-attn-q4k-lmhead-q4k
+description: >
+  #104's map (runtime Q4_K on the recurrent qkv of layers 1-63 and on attention, nvfp4_blockfit on the recurrent z
+  and out, lm_head fitted once) with every MLP block encoded by nvfp4_gptq_mlp: GPTQ with block act-order on gate
+  and up over the pinned statistics, and GPTQ on down over its input statistics derived from the pinned ones and
+  the unit's own gate/up weights. Formats and kernels are #104's, so speed and memory should not move. This is the
+  map where MLP rounding matters most (nvfp4_gptq lowered RP-KL by 0.0105 here, #86 to #104); on the pinned
+  weights and statistics the new encoder lowers the MLP block's output error by a further 15% (layer 30) to 55-64%
+  (layer 58), most of the remaining error being in down.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.mlp"
+    format: NVFP4
+    quantizer: nvfp4_gptq_mlp
+  - match: "L*.attn.*"
+    format: Q4_K
+  - match: "L*.gdn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.qkv"
+    layers: "1-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
