@@ -1,0 +1,30 @@
+schema: bittrellis/manifest@2
+track: HPC-01
+name: nvfp4-gptq-mlp-0-24-47-q4k-mlp-1-23-48-63-gdn-qkv-attn-q4k-lmhead-q4k
+description: >
+  #104 (Q4_K recurrent qkv 1-63 and attention, nvfp4_gptq on every MLP block, nvfp4_blockfit on the recurrent z
+  and out, lm_head fitted once: RP-KL 0.0754, 21.67 GiB) with Q4_K on MLP layers 1-23 and 48-63, keeping
+  nvfp4_gptq on MLP 0 and 24-47. On this map the gptq gain sits mostly in the middle MLP layers: gptq on all 64
+  blocks lowered RP-KL by 0.0105 (#86 to #104), gptq on every block except 24-47 by only 0.0032 (#90 to #111),
+  so layers 24-47 carry about 0.007. The same Q4_K window over #86's blockfit map was measured (#99: 0.0901,
+  decode -0.3%, prefill -39%, 20.98 GiB); with gptq bytes on its 25 NVFP4 MLP blocks drift should fall to about
+  0.083 at the same speed and memory, below every result at 21 GiB or less.
+authors: [cleanjunc]
+default: NVFP4
+rules:
+  - match: "L*.mlp"
+    format: NVFP4
+    quantizer: nvfp4_gptq
+  - match: "L*.attn.*"
+    format: Q4_K
+  - match: "L*.gdn.*"
+    format: NVFP4
+    quantizer: nvfp4_blockfit
+  - match: "L*.gdn.qkv"
+    layers: "1-63"
+    format: Q4_K
+  - match: "L*.mlp"
+    layers: "1-23,48-63"
+    format: Q4_K
+modules:
+  lm_head: Q4_K
