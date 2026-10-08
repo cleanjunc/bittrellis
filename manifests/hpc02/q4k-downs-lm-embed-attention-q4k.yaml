@@ -1,0 +1,24 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: q4k-downs-lm-embed-attention-q4k
+description: >
+  The #126 map (unsloth UD-Q4_K_M with routed expert downs, lm_head and token embeddings on Q4_K) with the q, k, v and o projections of the 10 full-attention layers on Q4_K (kq_rtn) instead of Q8_0. They are read in full for every decoded token (0.27 B weights), so Q4_K should lift decode by a few percent with 0.12 GiB less memory.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.attn.*"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
