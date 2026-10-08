@@ -1,0 +1,34 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: kq-gptq-dense-q4k-ud-experts
+description: >
+  #126's experts (unsloth's Q4_K gate/up; Q4_K routed downs except Q6_K on layers 34, 38 and 39) with every dense
+  tensor (attention, recurrent qkv/z/out, shared experts), lm_head and the token embeddings on Q4_K, encoded by the
+  new kq_gptq (weighted scale-and-minimum search, and GPTQ over the pinned attention/MoE input statistics). The
+  dense tensors are read in full for every decoded token, so Q4_K, the format SparkInfer reads fastest, raises
+  decode by about 16%; kq_gptq keeps the cost in drift at half of what plain kq_rtn rounding gives on the same map.
+  Measured on an RTX 5090 against #126 built the same way: RP-KL 0.0510 -> 0.0835 (kq_rtn: 0.1167), decode 403 ->
+  469, prefill 39.3k -> 40.1k, peak 23.96 -> 23.45 GiB.
+default: Q8_0
+encoders: {Q4_K: kq_gptq, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+    encoder: unsloth_ud
+  - match: "L*.exps.up"
+    format: Q4_K
+    encoder: unsloth_ud
+  - match: "L*.exps.down"
+    format: Q4_K
+  - match: "L*.attn.*"
+    format: Q4_K
+  - match: "L*.gdn.*"
+    format: Q4_K
+  - match: "L*.shexp.*"
+    format: Q4_K
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: Q4_K
+  embed: Q4_K
