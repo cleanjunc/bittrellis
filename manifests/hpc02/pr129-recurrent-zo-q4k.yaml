@@ -1,0 +1,30 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr129-recurrent-zo-q4k
+description: >
+  #129's map (the #126 map with the recurrent qkv on Q4_K) with the recurrent z and out projections on Q4_K (kq_rtn) as well, so every Gated DeltaNet projection is Q4_K. They are read in full for every decoded token (0.50 B weights), so decode should rise by about 5% over #129 with 0.23 GiB less memory.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.z"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.out"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
