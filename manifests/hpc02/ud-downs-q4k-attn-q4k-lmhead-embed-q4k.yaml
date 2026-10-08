@@ -1,0 +1,28 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: ud-downs-q4k-attn-q4k-lmhead-embed-q4k
+description: >
+  #126 (unsloth UD-Q4_K_M with routed expert downs, lm_head and token embeddings on Q4_K: RP-KL 0.0493, decode
+  403, 23.96 GiB) with the q, k, v and o projections of the 10 full-attention layers on Q4_K (kq_rtn) instead
+  of unsloth's Q8_0. They are read in full for every decoded token (0.27 B weights), so Q4_K, the format
+  SparkInfer reads fastest, should lift decode by a few percent with 0.12 GiB less memory. The recurrent
+  projections and the shared experts stay Q8_0.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.attn.*"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
