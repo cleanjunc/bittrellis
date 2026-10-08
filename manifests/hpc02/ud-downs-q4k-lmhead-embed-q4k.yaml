@@ -1,0 +1,27 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: ud-downs-q4k-lmhead-embed-q4k
+description: >
+  unsloth UD-Q4_K_M (V0) as a lower-memory map: the routed expert downs of every layer except 34, 38 and 39
+  move from Q5_K to Q4_K (kq_rtn), as llama.cpp's own Q4_K_S does, and lm_head (Q6_K) and the token embeddings
+  (Q8_0) move to Q4_K (kq_rtn). Layers 34, 38 and 39 keep unsloth's Q6_K downs, and every gate/up, shared
+  expert, attention and recurrent tensor keeps unsloth's bytes. The downs are a third of the model, so the map
+  is about 1.5 GiB smaller than V0 (searchable 19.0 vs 20.5 GiB); a token reads less of lm_head and of its
+  eight experts' downs, in the format SparkInfer reads fastest, so decode should rise a little. V1 (V0's map
+  by kq_rtn) shows the encoder change itself costs almost nothing (0.0460 vs 0.0450).
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
