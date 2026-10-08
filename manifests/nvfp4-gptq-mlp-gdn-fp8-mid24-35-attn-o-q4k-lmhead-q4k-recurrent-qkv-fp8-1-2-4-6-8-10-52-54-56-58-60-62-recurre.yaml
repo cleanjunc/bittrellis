@@ -1,9 +1,9 @@
 schema: bittrellis/manifest@2
 track: HPC-01
 name: nvfp4-gptq-mlp-gdn-fp8-mid24-35-attn-o-q4k-lmhead-q4k-recurrent-qkv-fp8-1-2-4-6-8-10-52-54-56-58-60-62-recurre
-description: '#113 with FP8 on the recurrent qkv of layers 1-10,52-62 and nvfp4_blockfit on the recurrent z of layers
-  24-34; every other unit keeps #113''s assignment. The substitution was measured by the evaluator on other maps
-  (see the PR description).'
+description: '#118 with runtime Q4_K on the attention of every layer and runtime Q4_K on the recurrent qkv of layers
+  1-10,24-30; every other unit keeps #118''s assignment. The substitution was measured by the evaluator on other
+  maps (see the PR description).'
 authors:
 - cleanjunc
 default: NVFP4
@@ -12,22 +12,22 @@ rules:
   format: NVFP4
   quantizer: nvfp4_gptq
 - match: L*.attn.q
-  format: NVFP4
-  quantizer: nvfp4_blockfit
+  format: Q4_K
 - match: L*.attn.k
-  format: NVFP4
-  quantizer: nvfp4_blockfit
+  format: Q4_K
 - match: L*.attn.v
-  format: NVFP4
-  quantizer: nvfp4_blockfit
+  format: Q4_K
 - match: L*.attn.o
   format: Q4_K
 - match: L*.gdn.qkv
-  format: FP8
-- match: L*.gdn.qkv
-  layers: 0,12-14,16-18,20-22,36-38,40-42,44-46,48-50
   format: NVFP4
   quantizer: nvfp4_blockfit
+- match: L*.gdn.qkv
+  layers: 32-34,52-54,56-58,60-62
+  format: FP8
+- match: L*.gdn.qkv
+  layers: 1-2,4-6,8-10,24-26,28-30
+  format: Q4_K
 - match: L*.gdn.z
   format: NVFP4
   quantizer: nvfp4_blockfit
