@@ -1,0 +1,27 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: q4k-downs-lm-embed-recurrent-zo-q4k
+description: >
+  The #126 map (unsloth UD-Q4_K_M with routed expert downs, lm_head and token embeddings on Q4_K) with the recurrent z and out projections of the 30 Gated DeltaNet layers on Q4_K (kq_rtn) instead of Q8_0. They are read in full for every decoded token (0.50 B weights), so Q4_K, the format SparkInfer reads fastest, should lift decode by about 5% with 0.23 GiB less memory.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.z"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.out"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
