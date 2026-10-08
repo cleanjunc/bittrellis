@@ -1,0 +1,33 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: ud-downs-q4k-attn-gdn-q5k-lmhead-embed-q4k
+description: >
+  #126's map (unsloth's experts with the routed downs, lm_head and token embeddings on Q4_K: RP-KL 0.0493, decode
+  404, 23.96 GiB) with every attention projection (q, k, v, o) and every Gated DeltaNet projection (qkv, z, out) on
+  Q5_K (kq_rtn) instead of Q8_0. A decoded token reads these in full. SparkInfer reads Q5_K as fast as Q4_K here:
+  Q5_K on the recurrent qkv gave +7.3% decode (#143), as Q4_K did (#129), while kq_rtn's Q5_K rounding error is
+  about a quarter of its Q4_K error. So this aims at the speed of the all-Q4_K projections (#130 and attention) at
+  a fraction of their drift. The shared experts stay Q8_0 (Q4_K made them slower) and unsloth's Q6_K downs of
+  layers 34, 38 and 39 are kept (#142/#143 suggest lowering them costs drift).
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.*"
+    format: Q5_K
+    encoder: kq_rtn
+  - match: "L*.attn.*"
+    format: Q5_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
