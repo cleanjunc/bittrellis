@@ -1,0 +1,33 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr129-recurrent-zo-deep-downs-q4k
+description: >
+  #129's map (the #126 map with the recurrent qkv on Q4_K: RP-KL 0.0612, decode 432) with the recurrent z and out
+  projections of layers 20-39 on Q4_K (kq_rtn), and the routed expert downs of layers 34, 38 and 39 on Q4_K like
+  the other 37. #130 put z/out on Q4_K in all 30 recurrent layers for +6% decode at +0.035 RP-KL; this takes the
+  deeper half, a point between #129 and #130 that no recipe holds, and the three Q6_K downs give back about
+  0.19 GiB. Attention, the shared experts and the shallow z/out stay Q8_0.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.z"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.out"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
