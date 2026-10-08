@@ -1,0 +1,25 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: ud-downs-q4k-gdn-qkv-q5k-lmhead-embed-q4k
+description: >
+  #126's map (unsloth's experts with the routed downs, lm_head and token embeddings on Q4_K: RP-KL 0.0493, decode
+  404, 23.96 GiB) with the recurrent qkv projections on Q5_K (kq_rtn) instead of Q8_0, and the routed expert downs
+  of layers 34, 38 and 39 on Q4_K like the other 37. Q4_K on the recurrent qkv gave +6.9% decode for +0.012 RP-KL
+  (#129); Q5_K is read at Q4_K's rate per byte in SparkInfer (#133's Q5_K experts) with about a quarter of its
+  rounding error, so this aims at most of that speed-up for a small part of the drift, between #126 and #129.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.qkv"
+    format: Q5_K
+    encoder: kq_rtn
+modules:
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
