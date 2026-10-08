@@ -1,0 +1,26 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: ud-lmhead-q4k-embed-q4k
+description: >
+  unsloth UD-Q4_K_M (V0) with the two vocabulary-sized tensors on Q4_K: lm_head Q6_K -> Q4_K and the token
+  embeddings Q8_0 -> Q4_K, both by the built-in kq_rtn. Every other tensor keeps unsloth's own bytes (routed
+  experts, shared experts, attention and recurrent projections). lm_head (248,320 x 2,048) is read in full for
+  every decoded token, about a sixth of the bytes a token reads in V0, and Q4_K is the format SparkInfer reads
+  fastest, so decode should rise by a few percent; the embedding table is only looked up one row per token, so
+  its 0.24 GiB saving is pure memory. Together about 0.36 GiB below V0, with drift close to V0's: two small
+  tensors at the edges of the network, quantized at the precision the rest of the experts already run.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q5_K
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
