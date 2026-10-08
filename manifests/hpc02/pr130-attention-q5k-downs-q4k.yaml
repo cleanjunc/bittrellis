@@ -1,0 +1,35 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr130-attention-q5k-downs-q4k
+description: >
+  #130's map (every Gated DeltaNet projection on Q4_K over unsloth's experts: RP-KL 0.0965, decode 459, 23.50 GiB)
+  with the attention projections (q, k, v, o of the 10 full-attention layers) on Q5_K (kq_rtn) instead of Q8_0, and
+  the routed expert downs of layers 34, 38 and 39 on Q4_K like the other 37. A decoded token reads the attention
+  weights in full; Q4_K there gave +4% decode on #129 but cost tasks, so this uses Q5_K, which reads at Q4_K's
+  rate per byte in SparkInfer (#133's Q5_K experts) at about a quarter of its rounding error. The shared experts
+  stay Q8_0 (Q4_K made them slower).
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.z"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.out"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.attn.*"
+    format: Q5_K
+    encoder: kq_rtn
+modules:
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
