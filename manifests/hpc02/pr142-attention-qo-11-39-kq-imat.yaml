@@ -1,0 +1,41 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr142-attention-qo-11-39-kq-imat
+description: >
+  #142's map (#129 with the recurrent z/out of layers 20-39 and every routed down on Q4_K: RP-KL 0.0713, decode
+  447.0, 23.42 GiB) with the attention q and o projections of layers 11-39 on Q4_K as in #145 (on #130 that step
+  cost +0.005 RP-KL for +3.4% decode and kept the task guard), and every tensor this recipe re-encodes (routed
+  downs, recurrent qkv/z/out, attention q/o, lm_head, embeddings) rounded by kq_imat (#138) instead of kq_rtn.
+  unsloth's routed gate/up bytes are kept. A point between #142 and #145: most of #145's speed at #142's drift.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.gdn.z"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.gdn.out"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.attn.q"
+    layers: "11-39"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.attn.o"
+    layers: "11-39"
+    format: Q4_K
+    encoder: kq_imat
+modules:
+  lm_head: {format: Q4_K, encoder: kq_imat}
+  embed: {format: Q4_K, encoder: kq_imat}
