@@ -1,0 +1,43 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr130-attention-qo-11-39-q4k
+description: >
+  #130's map (every Gated DeltaNet projection on Q4_K over unsloth's experts: RP-KL 0.0965, decode 458.7, 23.50
+  GiB, tasks 570) with the attention q and o projections of the full-attention layers 11-39 (8 of 10) on Q4_K
+  (kq_rtn). Q4_K on all of q/k/v/o gave +4.0% decode but cost tasks (#134, #144); q and o hold 92% of the
+  attention bytes a decoded token reads, while k and v (which set the attention pattern) and the two earliest
+  attention layers (3, 7) stay Q8_0, so this keeps about three quarters of that speed-up with the
+  pattern-setting tensors untouched. The shared experts and unsloth's Q6_K downs of layers 34, 38, 39 are kept.
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.z"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.gdn.out"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.attn.q"
+    layers: "11-39"
+    format: Q4_K
+    encoder: kq_rtn
+  - match: "L*.attn.o"
+    layers: "11-39"
+    format: Q4_K
+    encoder: kq_rtn
+modules:
+  L34.exps.down: Q6_K
+  L38.exps.down: Q6_K
+  L39.exps.down: Q6_K
+  lm_head: {format: Q4_K, encoder: kq_rtn}
+  embed: {format: Q4_K, encoder: kq_rtn}
