@@ -1,0 +1,20 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr3-eg1-ed0-056e5c
+description: V3's map (RP-KL 0.0340, decode 383.6 tok/s, prefill 37,001 tok/s, peak 29.24 GiB) with the routed gate/up
+  on Q5_K (kq_imat); the routed downs on Q4_K (kq_imat). Predicted from the evaluator's own hpc02-e1 results.
+default: Q8_0
+rules:
+- match: L*.exps.gate
+  format: Q5_K
+  encoder: kq_imat
+- match: L*.exps.up
+  format: Q5_K
+  encoder: kq_imat
+- match: L*.exps.down
+  format: Q4_K
+  encoder: kq_imat
+modules:
+  lm_head:
+    format: Q6_K
+    encoder: kq_rtn
